@@ -191,7 +191,8 @@ void YoloObjectDetector::init()
   
   // カメラから送られてくるトピックを受け取るsubscriber、コールバック関数はトピックを受け取ったときに処理される関数
   using std::placeholders::_1;
-  imageSubscriber_ = it_->subscribe(cameraTopicName, cameraQueueSize, std::bind(&YoloObjectDetector::cameraCallback, this, _1));
+  rmw_qos_profile_t image_qos = rmw_qos_profile_sensor_data;
+  imageSubscriber_ = image_transport::create_subscription(this, cameraTopicName, std::bind(&YoloObjectDetector::cameraCallback, this, _1), "raw", image_qos);
 
   // 
   rclcpp::QoS object_publisher_qos(objectDetectorQueueSize);// 通信の品質を保つためのなにか、

@@ -10,18 +10,22 @@ def generate_launch_description():
 
   darknet_ros_launch = IncludeLaunchDescription(
     PythonLaunchDescriptionSource([darknet_ros_share_dir + '/launch/darknet_ros.launch.py']),
-      launch_arguments={'network_param_file': network_param_file}.items()
+    launch_arguments={'network_param_file': network_param_file}.items()
   )
 
-  camera = Node(
-    package="v4l2_camera",
-    executable="v4l2_camera_node",
-    parameters=[
-      {'video_device': "/dev/video0"},
-    ])
-
+  # camera = Node(
+  #   package="v4l2_camera",
+  #   executable="v4l2_camera_node",
+  #   parameters=[
+  #     {'video_device': "/dev/video0"},
+  #   ])
+  
   return LaunchDescription([
-    darknet_ros_launch,
-    # if you want to disable camera node, remove the following line.
-    camera,
+    darknet_ros_launch
   ])
+
+  # return LaunchDescription([
+  #   darknet_ros_launch,
+  #   # if you want to disable camera node, remove the following line.
+  #   camera,
+  # ])
