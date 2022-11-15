@@ -68,6 +68,9 @@ YoloObjectDetector::YoloObjectDetector()
   declare_parameter("yolo_model.window_name", std::string("YOLO"));
 
   declare_parameter("actions.camera_reading.topic", std::string("check_for_objects"));
+
+  // mno add
+  declare_parameter("detect_way_points", std::vector<int64_t>(1,0));
 }
 
 // ディストラクタ、mutexをunlockしてnodeが死んだことにする
@@ -186,6 +189,10 @@ void YoloObjectDetector::init()
   get_parameter("publishers.detection_image.topic", detectionImageTopicName);
   get_parameter("publishers.detection_image.queue_size", detectionImageQueueSize);
   get_parameter("publishers.detection_image.latch", detectionImageLatch);
+  get_parameter("detect_way_points", detectWayPoints);
+
+  // mno
+  subscription_way = this->create_subscription<std_msgs::msg::Int16>(std::string("/way_point"), 10, std::bind(&YoloObjectDetector::wayPointCallback, this, std::placeholders::_1));
 
   it_ = std::make_shared<image_transport::ImageTransport>(shared_from_this());
   
@@ -194,8 +201,7 @@ void YoloObjectDetector::init()
   rmw_qos_profile_t image_qos = rmw_qos_profile_sensor_data;
   imageSubscriber_ = image_transport::create_subscription(this, cameraTopicName, std::bind(&YoloObjectDetector::cameraCallback, this, _1), "raw", image_qos);
 
-  // 
-  rclcpp::QoS object_publisher_qos(objectDetectorQueueSize);// 通信の品質を保つためのなにか、
+  rclcpp::QoS object_publisher_qos(objectDetectorQueueSize);// 通信の品質を保つためのもの、
   if (objectDetectorLatch) {
     object_publisher_qos.transient_local();
   }
@@ -239,6 +245,22 @@ void YoloObjectDetector::init()
     std::bind(&YoloObjectDetector::checkForObjectsActionAcceptedCB, this, _1));
 }
 
+void YoloObjectDetector::wayPointCallback(const std_msgs::msg::Int16::SharedPtr msg) 
+{
+  int wayPoint = msg->data;
+  bool detectPointFlag = false;
+  for (size_t i = 0; i < detectWayPoints.size(); i++)
+  {
+    if (wayPoint == detectWayPoints[i])
+    {
+      detectPointFlag = true;
+      break;
+    }
+  }
+  if (detectPointFlag) isDetect_ = true;
+  else isDetect_ = false;
+}
+
 // cameraのトピックをsubscribeしたときのcallback関数
 void YoloObjectDetector::cameraCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
 {
@@ -268,7 +290,6 @@ void YoloObjectDetector::cameraCallback(const sensor_msgs::msg::Image::ConstShar
     frameHeight_ = cam_image->image.size().height;
   }
 
-  
   return;
 }
 
@@ -318,8 +339,7 @@ YoloObjectDetector::checkForObjectsActionPreemptCB(
   return rclcpp_action::CancelResponse::ACCEPT;
 }
 
-void
-YoloObjectDetector::checkForObjectsActionAcceptedCB(
+void YoloObjectDetector::checkForObjectsActionAcceptedCB(
   const std::shared_ptr<GoalHandleCheckForObjectsAction> goal_handle)
 {
   RCLCPP_DEBUG(get_logger(), "[YoloObjectDetector] action accepted.");
@@ -597,7 +617,7 @@ void YoloObjectDetector::yolo()
   static int start_count = 0;
   const auto wait_duration = std::chrono::milliseconds(2000);
   while (!getImageStatus()) {
-    printf("Waiting for image.\n");
+    printf("Waiting for image and way point to detect.\n");
     if (!isNodeRunning()) {
       return;
     }
@@ -651,6 +671,11 @@ void YoloObjectDetector::yolo()
   demoTime_ = what_time_is_it_now();
 
   while (!demoDone_) {
+    if(!isDetect_) {
+      printf("isDetect = false.\n");
+      continue;
+    }
+
     buffIndex_ = (buffIndex_ + 1) % 3;
     fetch_thread = std::thread(&YoloObjectDetector::fetchInThread, this);
     detect_thread = std::thread(&YoloObjectDetector::detectInThread, this);

@@ -28,6 +28,7 @@
 #include "sensor_msgs/msg/image.hpp"
 #include "geometry_msgs/msg/point.hpp"
 #include "image_transport/image_transport.hpp"
+#include "std_msgs/msg/int16.hpp"
 
 // OpenCv
 #include <opencv2/imgproc/imgproc.hpp>
@@ -124,6 +125,8 @@ class YoloObjectDetector : public rclcpp::Node
    */
   void cameraCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg);
 
+void wayPointCallback(const std_msgs::msg::Int16::SharedPtr msg);
+
 
   //! Typedefs.
   using CheckForObjectsAction = darknet_ros_msgs::action::CheckForObjects;
@@ -177,6 +180,7 @@ class YoloObjectDetector : public rclcpp::Node
 
   //! ROS subscriber and publisher.
   image_transport::Subscriber imageSubscriber_;
+  rclcpp::Subscription<std_msgs::msg::Int16>::SharedPtr subscription_way;
   rclcpp::Publisher<darknet_ros_msgs::msg::ObjectCount>::SharedPtr objectPublisher_;
   rclcpp::Publisher<darknet_ros_msgs::msg::BoundingBoxes>::SharedPtr boundingBoxesPublisher_;
   rclcpp::Publisher<darknet_ros_msgs::msg::Mno>::SharedPtr mnoPublisher_;
@@ -250,6 +254,10 @@ class YoloObjectDetector : public rclcpp::Node
 
   int actionId_;
   std::shared_mutex mutexActionStatus_;
+
+  // mno add
+  bool isDetect_ = false;
+  std::vector<int64_t> detectWayPoints;
 
   // double getWallTime();
 

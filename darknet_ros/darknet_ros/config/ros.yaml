@@ -24,3 +24,6 @@ darknet_ros:
       enable_opencv: false
       wait_key_delay: 3
       enable_console_output: true
+    detect_way_points:
+      - 10
+      - 20
