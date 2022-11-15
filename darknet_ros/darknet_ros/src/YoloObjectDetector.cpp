@@ -192,7 +192,7 @@ void YoloObjectDetector::init()
   get_parameter("detect_way_points", detectWayPoints);
 
   // mno
-  subscription_way = this->create_subscription<std_msgs::msg::Int16>(std::string("/way_point"), 10, std::bind(&YoloObjectDetector::wayPointCallback, this, std::placeholders::_1));
+  subscription_way = this->create_subscription<std_msgs::msg::Int16>(std::string("/current_waypoint_index"), 10, std::bind(&YoloObjectDetector::wayPointCallback, this, std::placeholders::_1));
 
   it_ = std::make_shared<image_transport::ImageTransport>(shared_from_this());
   
