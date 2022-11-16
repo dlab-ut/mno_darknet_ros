@@ -70,6 +70,8 @@ YoloObjectDetector::YoloObjectDetector()
   declare_parameter("actions.camera_reading.topic", std::string("check_for_objects"));
 
   // mno add
+  declare_parameter("subscribers.way_point.topic", std::string("/current_waypoint_index"));
+  declare_parameter("publishers.darknet_ros_mno.topic", std::string("/darknet_ros_mno"));
   declare_parameter("detect_way_points", std::vector<int64_t>(1,0));
 }
 
@@ -177,6 +179,8 @@ void YoloObjectDetector::init()
   std::string detectionImageTopicName;
   int detectionImageQueueSize;
   bool detectionImageLatch;
+  std::string wayPointTopicName;
+  std::string mnoDarknetTopicName;
 
   get_parameter("subscribers.camera_reading.topic", cameraTopicName);
   get_parameter("subscribers.camera_reading.queue_size", cameraQueueSize);
@@ -189,10 +193,12 @@ void YoloObjectDetector::init()
   get_parameter("publishers.detection_image.topic", detectionImageTopicName);
   get_parameter("publishers.detection_image.queue_size", detectionImageQueueSize);
   get_parameter("publishers.detection_image.latch", detectionImageLatch);
+  get_parameter("subscribers.way_point.topic", wayPointTopicName);
+  get_parameter("publishers.darknet_ros_mno.topic", mnoDarknetTopicName);
   get_parameter("detect_way_points", detectWayPoints);
 
   // mno
-  subscription_way = this->create_subscription<std_msgs::msg::Int16>(std::string("/current_waypoint_index"), 10, std::bind(&YoloObjectDetector::wayPointCallback, this, std::placeholders::_1));
+  subscription_way = this->create_subscription<std_msgs::msg::Int16>(wayPointTopicName, 10, std::bind(&YoloObjectDetector::wayPointCallback, this, std::placeholders::_1));
 
   it_ = std::make_shared<image_transport::ImageTransport>(shared_from_this());
   
@@ -225,8 +231,8 @@ void YoloObjectDetector::init()
   // mno
   rclcpp::QoS mno_publisher_qos(1);
   mno_publisher_qos.transient_local();
-  // 画像を送るpublisher
-  mnoPublisher_ = this->create_publisher<darknet_ros_msgs::msg::Mno>(std::string("mno_topic"), mno_publisher_qos);
+  // 画像とbouding boxを送るpublisher
+  mnoPublisher_ = this->create_publisher<darknet_ros_msgs::msg::Mno>(std::string("/darknet_ros_mno"), mno_publisher_qos);
 
   // Action servers.
   std::string checkForObjectsActionName;
@@ -672,7 +678,7 @@ void YoloObjectDetector::yolo()
 
   while (!demoDone_) {
     if(!isDetect_) {
-      printf("isDetect = false.\n");
+      std::this_thread::sleep_for(wait_duration);
       continue;
     }
 

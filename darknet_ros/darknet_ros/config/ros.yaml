@@ -4,6 +4,8 @@ darknet_ros:
       camera_reading:
         topic: /sensing/center_camera/image_raw
         queue_size: 1
+      way_point:
+        topic: /current_waypoint_index
     actions:
       camera_reading:
         topic: /darknet_ros/check_for_objects
@@ -20,10 +22,12 @@ darknet_ros:
         topic: /darknet_ros/detection_image
         queue_size: 1
         latch: true
+      darknet_ros_mno:
+        topic: /darknet_ros_mno
     image_view:
       enable_opencv: false
       wait_key_delay: 3
       enable_console_output: true
     detect_way_points:
       - 10
-      - 20
+      - 30
